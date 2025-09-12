@@ -144,7 +144,7 @@ async def designer(ctx):
             "<:9_:1415749674786361354> Para arredondar ou upar uma imagem, selecione o botão desejado;\n"
             "<:9_:1415749674786361354> Ao clicar no botão, forneça o link da imagem conforme solicitado."
         ),
-        color=0x2b2d31
+        color=0xfe0155
     )
     embed.set_image(url="https://i.imgur.com/8dylYAD.png")
 
