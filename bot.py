@@ -142,12 +142,11 @@ async def designer(ctx):
         title="<:4_:1415749694755307550> Designer Tools - Arredondar & Upar imagem",
         description=(
             "<:9_:1415749674786361354> Para arredondar ou upar uma imagem, selecione o botão desejado;\n"
-            "<:9_:1415749674786361354> A imagem deve estar no formato PNG;\n"
             "<:9_:1415749674786361354> Ao clicar no botão, forneça o link da imagem conforme solicitado."
         ),
         color=0x2b2d31
     )
-    embed.set_image(url="https://media.discordapp.net/attachments/1402654259320717343/1415738323757961236/image.png")
+    embed.set_image(url="https://i.imgur.com/8dylYAD.png")
 
     await ctx.send(embed=embed, view=DesignerToolsView())
 
