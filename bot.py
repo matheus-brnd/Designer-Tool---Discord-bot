@@ -144,7 +144,7 @@ async def designer(ctx):
             "<:9_:1415749674786361354> Para arredondar ou upar uma imagem, selecione o botão desejado;\n"
             "<:9_:1415749674786361354> Ao clicar no botão, forneça o link da imagem conforme solicitado.\n"
             " \n"
-            "___Obs:___\n"
+            "<:8_:1416190695227789322> ___Obs:___\n"
             "-# <:9_:1415749674786361354> Após arredondar, o bot irá enviar pela dm a imagem solicitada. Caso o seu privado esteja fechado ele irá enviar uma mensagem efêmera no canal com a imagem anexada.\n"
             "-# <:9_:1415749674786361354> Ao solicitar que o bot upe a imagem no imgur, ele irá enviar uma mensagem efêmera no canal atual com o link da imagem."
         ),
