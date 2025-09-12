@@ -5,6 +5,7 @@ from PIL import Image, ImageDraw
 import aiohttp
 import io
 import os
+from typing import Union
 
 # --- CONFIGURAÇÃO ---
 DISCORD_TOKEN = "DISCORD_TOKEN"
@@ -27,7 +28,7 @@ def round_corners_logic(image_bytes: bytes) -> io.BytesIO:
         final_buffer.seek(0)
         return final_buffer
 
-async def upload_to_imgur_logic(session: aiohttp.ClientSession, image_bytes: bytes) -> str | None:
+async def upload_to_imgur_logic(session: aiohttp.ClientSession, image_bytes: bytes) -> Union[str, None]:
     url = "https://api.imgur.com/3/upload"
     headers = {'Authorization': f'Client-ID {IMGUR_CLIENT_ID}'}
     data = {'image': image_bytes}
@@ -153,3 +154,4 @@ async def designer(ctx):
 # --- INICIALIZAÇÃO DO BOT ---
 
 bot.run(DISCORD_TOKEN)
+
