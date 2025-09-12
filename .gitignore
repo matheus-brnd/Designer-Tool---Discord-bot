@@ -1,0 +1,8 @@
+# Ignorar arquivos de ambiente com segredos
+.env
+
+# Ignorar arquivos de cache do Python
+__pycache__
+
+# Ignorar arquivos de backup do nano
+.save
