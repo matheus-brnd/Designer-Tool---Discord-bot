@@ -7,8 +7,8 @@ import io
 import os
 
 # --- CONFIGURAÇÃO ---
-DISCORD_TOKEN = "MTI0ODI2MjQxNDgwMjA5NjMzMg.G1FzSa.rjzoBNiDb49XSSr8kpdpbGJViSg9CBxd0hDOEA"
-IMGUR_CLIENT_ID = "1e9d0bad8e66dcb"
+DISCORD_TOKEN = "DISCORD_TOKEN"
+IMGUR_CLIENT_ID = "IMGUR_CLIENT_ID"
 
 # --- LÓGICA DO BOT ---
 
@@ -151,4 +151,5 @@ async def designer(ctx):
     await ctx.send(embed=embed, view=DesignerToolsView())
 
 # --- INICIALIZAÇÃO DO BOT ---
+
 bot.run(DISCORD_TOKEN)
