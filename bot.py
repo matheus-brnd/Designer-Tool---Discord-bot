@@ -146,7 +146,7 @@ async def designer(ctx):
             " \n"
             "___Obs:___\n"
             "-# <:9_:1415749674786361354> Após arredondar, o bot irá enviar pela dm a imagem solicitada. Caso o seu privado esteja fechado ele irá enviar uma mensagem efêmera no canal com a imagem anexada.\n"
-            "-# <:9_:1415749674786361354> Após solicitar que o bot upe a imagem no imgur, ele irá enviar uma mensagem efêmera no canal atual com o link da imagem."
+            "-# <:9_:1415749674786361354> Ao solicitar que o bot upe a imagem no imgur, ele irá enviar uma mensagem efêmera no canal atual com o link da imagem."
         ),
         color=0xfe0155
     )
