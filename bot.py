@@ -8,8 +8,8 @@ import os
 from typing import Union
 
 # --- CONFIGURAÇÃO ---
-DISCORD_TOKEN = "DISCORD_TOKEN"
-IMGUR_CLIENT_ID = "IMGUR_CLIENT_ID"
+DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")
+IMGUR_CLIENT_ID = os.getenv("IMGUR_CLIENT_ID")
 
 # --- LÓGICA DO BOT ---
 
@@ -154,4 +154,5 @@ async def designer(ctx):
 # --- INICIALIZAÇÃO DO BOT ---
 
 bot.run(DISCORD_TOKEN)
+
 
