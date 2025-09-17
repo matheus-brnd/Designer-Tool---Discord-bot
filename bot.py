@@ -107,7 +107,7 @@ class ProcessingChoiceView(ui.View):
         except Exception as e:
             print(f"Erro ao apagar mensagens: {e}")
 
-    @ui.button(label="Arredondar e Upar", style=discord.ButtonStyle.success, emoji="🚀")
+    @ui.button(label="Arredondar e Upar", style=discord.ButtonStyle.success, emoji="☁️")
     async def round_and_upload(self, interaction: discord.Interaction, button: ui.Button):
         user_message = await self.wait_for_images(interaction)
         if user_message is None: 
@@ -174,8 +174,9 @@ class DesignerToolsView(ui.View):
     @ui.button(label="Arredondar Borda", style=discord.ButtonStyle.primary, emoji="🖼️", custom_id="main_round_button")
     async def round_button(self, interaction: discord.Interaction, button: ui.Button):
         embed = discord.Embed(
-            title="Arredondar Imagens",
-            description="Escolha uma opção de processamento. Após clicar, envie as imagens desejadas no canal.",
+            title="<:4_:1416148634554077276> Arredondar Imagens",
+            description=("<:9_:1416148650433970216> Escolha uma opção conforme o desejado.\n "
+                         "<:9_:1416148650433970216> Após clicar, envie no chat as imagens desejadas."),
             color=0xfe0155
         )
         await interaction.response.send_message(embed=embed, view=ProcessingChoiceView())
@@ -200,8 +201,12 @@ async def designer(ctx):
     embed = discord.Embed(
         title="<:4_:1415749694755307550> Designer Tools",
         description=(
-            "<:9_:1415749674786361354> **Arredondar Borda**: Inicia o processo para arredondar uma ou mais imagens enviadas no canal.\n"
-            "<:9_:1415749674786361354> **Upar no Imgur**: Abre um pop-up para fazer o upload de uma única imagem por link."
+            "<:9_:1415749674786361354> Para arredondar ou upar uma imagem, selecione o botão desejado;\n"
+            "<:9_:1415749674786361354> Ao clicar no botão, forneça os itens conforme solicitado.\n"
+            "\n"
+"<:8_:1227304249197727905> ___Obs:___\n"
+"<:9_:1415749674786361354> Após arredondar, o bot irá enviar pela dm a(s) imagem(ns) solicitada(s). Caso o seu privado esteja fechado ele irá enviar uma mensagem efêmera no canal com a(s) imagem(ns).\n"
+"<:9_:1415749674786361354> Ao solicitar que o bot upe a(s) imagem(ns) no imgur, ele irá enviar uma mensagem efêmera no canal atual com o link da(s) imagem(ns)."
         ),
         color=0xfe0155
     )
