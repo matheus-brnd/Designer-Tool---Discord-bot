@@ -10,6 +10,7 @@ import os
 
 # --- CONFIGURAÇÃO ---
 # No servidor, use os.getenv("NOME_DA_VARIAVEL")
+# Para testes locais, pode definir diretamente:
 DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")
 IMGUR_CLIENT_ID = os.getenv("IMGUR_CLIENT_ID")
 
@@ -44,7 +45,7 @@ async def upload_to_imgur_logic(session: aiohttp.ClientSession, image_bytes: byt
 
 # 2. Modals e Views
 
-# Modal para UMA imagem
+# Modal para UMA imagem (usado pelo botão de Upload)
 class SingleImageURLModal(ui.Modal, title="Upar Imagem no Imgur"):
     image_url = ui.TextInput(label="Cole o link da imagem para upload", style=discord.TextStyle.short, required=True)
 
@@ -60,6 +61,7 @@ class SingleImageURLModal(ui.Modal, title="Upar Imagem no Imgur"):
             except Exception:
                 await interaction.followup.send("URL inválida.", ephemeral=True)
                 return
+
             try:
                 with Image.open(io.BytesIO(image_data)) as image:
                     output_buffer = io.BytesIO()
@@ -69,6 +71,7 @@ class SingleImageURLModal(ui.Modal, title="Upar Imagem no Imgur"):
             except Exception:
                 await interaction.followup.send("O link não parece ser de uma imagem válida que eu consiga ler.", ephemeral=True)
                 return
+            
             upload_link = await upload_to_imgur_logic(session, image_bytes_as_png)
             if upload_link:
                 embed = discord.Embed(title="Upload Concluído", color=0xfe0155)
@@ -81,7 +84,8 @@ class SingleImageURLModal(ui.Modal, title="Upar Imagem no Imgur"):
 class ProcessingChoiceView(ui.View):
     def __init__(self, original_message: discord.Message):
         super().__init__(timeout=300)
-        self.original_message = original_message
+        # A mensagem original do comando !designer NÃO é mais necessária aqui
+        # self.original_message = original_message
 
     async def wait_for_images(self, interaction: discord.Interaction) -> Union[discord.Message, None]:
         await interaction.response.send_message("Aguardando... Por favor, envie suas imagens em uma única mensagem.", ephemeral=True)
@@ -98,7 +102,9 @@ class ProcessingChoiceView(ui.View):
         try:
             await interaction_message.delete()
             await user_message.delete()
-            await self.original_message.delete()
+            # --- ALTERAÇÃO AQUI ---
+            # A linha abaixo que apagava a embed principal foi REMOVIDA
+            # await self.original_message.delete()
         except discord.Forbidden:
             print("Não tenho permissão para apagar mensagens.")
         except Exception as e:
@@ -110,6 +116,7 @@ class ProcessingChoiceView(ui.View):
         if user_message is None: 
             await interaction.message.delete()
             return
+        
         processing_msg = await interaction.followup.send("Processando e fazendo upload...", ephemeral=True)
         links = []
         image_bytes_list = [await att.read() for att in user_message.attachments if att.content_type.startswith('image/')]
@@ -118,12 +125,14 @@ class ProcessingChoiceView(ui.View):
                 rounded_buffer = round_corners_logic(image_bytes)
                 link = await upload_to_imgur_logic(session, rounded_buffer.read())
                 if link: links.append(link)
+        
         if links:
             links_string = "\n".join(links)
             embed = discord.Embed(title="Upload Concluído", description=f"```{links_string}```", color=0x5865F2)
             await processing_msg.edit(content=None, embed=embed)
         else:
             await processing_msg.edit(content="Ocorreu um erro ao fazer o upload das imagens.")
+        
         await self.cleanup(interaction.message, user_message)
         self.stop()
 
@@ -133,6 +142,7 @@ class ProcessingChoiceView(ui.View):
         if user_message is None:
             await interaction.message.delete()
             return
+        
         processing_msg = await interaction.followup.send("Arredondando imagens...", ephemeral=True)
         processed_files = []
         image_bytes_list = [await att.read() for att in user_message.attachments if att.content_type.startswith('image/')]
@@ -146,22 +156,22 @@ class ProcessingChoiceView(ui.View):
                 file.fp.seek(0)
             await processing_msg.edit(content=f"Todas as imagens foram enviadas no seu privado! ✔️")
         except discord.Forbidden:
-            # --- CORREÇÃO AQUI ---
-            # Editamos a mensagem original para avisar do erro
-            await processing_msg.edit(content="Não consegui enviar no seu privado (suas DMs podem estar desativadas).")
-            # E então enviamos uma NOVA mensagem de followup com os arquivos
             for file in processed_files: file.fp.seek(0)
-            await interaction.followup.send(content="Aqui estão suas imagens:", files=processed_files, ephemeral=True)
+            await processing_msg.edit(content="Não consegui enviar no seu privado (suas DMs podem estar desativadas). Aqui estão suas imagens:", files=processed_files)
         
         await self.cleanup(interaction.message, user_message)
         self.stop()
     
     @ui.button(label="Cancelar", style=discord.ButtonStyle.danger, emoji="✖️")
     async def cancel_button(self, interaction: discord.Interaction, button: ui.Button):
+        # Apaga apenas a mensagem de opções (a segunda embed)
         await interaction.message.delete()
-        await self.original_message.delete()
+        # --- ALTERAÇÃO AQUI ---
+        # A linha abaixo que apagava a embed principal foi REMOVIDA
+        # await self.original_message.delete() 
         await interaction.response.send_message("Processo cancelado.", ephemeral=True)
         self.stop()
+
 
 # View Principal
 class DesignerToolsView(ui.View):
@@ -176,8 +186,8 @@ class DesignerToolsView(ui.View):
                          "<:9_:1416148650433970216> Após clicar, envie no chat as imagens desejadas."),
             color=0xfe0155
         )
-        # Passa a mensagem original do comando para a próxima View, para que ela possa ser deletada
-        await interaction.response.send_message(embed=embed, view=ProcessingChoiceView(original_message=interaction.message))
+        # Não precisamos mais passar a mensagem original para a próxima View
+        await interaction.response.send_message(embed=embed, view=ProcessingChoiceView())
 
     @ui.button(label="Upar no Imgur", style=discord.ButtonStyle.secondary, emoji="☁️", custom_id="main_upload_button")
     async def upload_button(self, interaction: discord.Interaction, button: ui.Button):
@@ -191,6 +201,7 @@ bot = commands.Bot(command_prefix="!", intents=intents)
 @bot.event
 async def on_ready():
     bot.add_view(DesignerToolsView())
+    # A ProcessingChoiceView não precisa ser registrada aqui pois é temporária
     print(f'Bot {bot.user} está online e pronto!')
 
 @bot.command()
@@ -201,9 +212,9 @@ async def designer(ctx):
             "<:9_:1415749674786361354> Para arredondar ou upar uma imagem, selecione o botão desejado;\n"
             "<:9_:1415749674786361354> Ao clicar no botão, forneça os itens conforme solicitado.\n"
             " \n"
-            "<:8_:1227304249197727905> ___Obs:___\n"
-            "-# <:9_:1415749674786361354> Após arredondar, o bot irá enviar pela dm a(s) imagem(ns) solicitada(s). Caso o seu privado esteja fechado ele irá enviar uma mensagem efêmera no canal com a(s) imagem(ns).\n"
-            "-# <:9_:1415749674786361354> Ao solicitar que o bot upe a(s) imagem(ns) no imgur, ele irá enviar uma mensagem efêmera no canal atual com o link da(s) imagem(ns)."
+"<:8_:1227304249197727905> ___Obs:___\n"
+"<:9_:1415749674786361354> Após arredondar, o bot irá enviar pela dm a(s) imagem(ns) solicitada(s). Caso o seu privado esteja fechado ele irá enviar uma mensagem efêmera no canal com a(s) imagem(ns).\n"
+"<:9_:1415749674786361354> Ao solicitar que o bot upe a(s) imagem(ns) no imgur, ele irá enviar uma mensagem efêmera no canal atual com o link da(s) imagem(ns)."
         ),
         color=0xfe0155
     )
