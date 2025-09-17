@@ -86,7 +86,7 @@ class ProcessingChoiceView(ui.View):
         super().__init__(timeout=300)
 
     async def wait_for_images(self, interaction: discord.Interaction) -> Union[discord.Message, None]:
-        await interaction.response.send_message("Aguardando... Por favor, envie suas imagens em uma única mensagem agora.", ephemeral=True)
+        await interaction.response.send_message("Aguardando... Por favor, envie suas imagens em uma única mensagem.", ephemeral=True)
         def check(m: discord.Message):
             # --- CORREÇÃO AQUI ---
             # A linha inteira do "return" deve ficar junta
@@ -151,7 +151,7 @@ class ProcessingChoiceView(ui.View):
             for file in processed_files:
                 await interaction.user.send(file=file)
                 file.fp.seek(0)
-            await processing_msg.edit(content=f"Todas as {len(processed_files)} imagem(ns) foram enviadas no seu privado! ✔️")
+            await processing_msg.edit(content=f"Todas as imagens foram enviadas no seu privado! ✔️")
         except discord.Forbidden:
             for file in processed_files: file.fp.seek(0)
             await processing_msg.edit(content="Não consegui enviar no seu privado (suas DMs podem estar desativadas). Aqui estão suas imagens:", files=processed_files)
