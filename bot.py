@@ -82,14 +82,14 @@ class SingleImageURLModal(ui.Modal, title="Upar Imagem no Imgur"):
 
 # View Secundária para processamento em massa
 class ProcessingChoiceView(ui.View):
-    def __init__(self):
+    def __init__(self, original_message: discord.Message):
         super().__init__(timeout=300)
+        # Guarda a mensagem original do comando !designer para poder excluí-la
+        self.original_message = original_message
 
     async def wait_for_images(self, interaction: discord.Interaction) -> Union[discord.Message, None]:
         await interaction.response.send_message("Aguardando... Por favor, envie suas imagens em uma única mensagem.", ephemeral=True)
         def check(m: discord.Message):
-            # --- CORREÇÃO AQUI ---
-            # A linha inteira do "return" deve ficar junta
             return m.author == interaction.user and m.channel == interaction.channel and m.attachments
         try:
             message_with_images = await bot.wait_for('message', check=check, timeout=300.0)
@@ -102,6 +102,8 @@ class ProcessingChoiceView(ui.View):
         try:
             await interaction_message.delete()
             await user_message.delete()
+            # Também apaga a mensagem original do comando !designer
+            await self.original_message.delete()
         except discord.Forbidden:
             print("Não tenho permissão para apagar mensagens.")
         except Exception as e:
@@ -153,6 +155,9 @@ class ProcessingChoiceView(ui.View):
                 file.fp.seek(0)
             await processing_msg.edit(content=f"Todas as imagens foram enviadas no seu privado! ✔️")
         except discord.Forbidden:
+            # --- ALTERAÇÃO AQUI ---
+            # O `followup.send` não aceita `files`, mas o `edit` sim.
+            # Também era necessário rebobinar os arquivos para a segunda tentativa.
             for file in processed_files: file.fp.seek(0)
             await processing_msg.edit(content="Não consegui enviar no seu privado (suas DMs podem estar desativadas). Aqui estão suas imagens:", files=processed_files)
         
@@ -162,6 +167,9 @@ class ProcessingChoiceView(ui.View):
     @ui.button(label="Cancelar", style=discord.ButtonStyle.danger, emoji="✖️")
     async def cancel_button(self, interaction: discord.Interaction, button: ui.Button):
         await interaction.message.delete()
+        # --- ALTERAÇÃO AQUI ---
+        # Adicionado o comando para deletar a mensagem original do !designer
+        await self.original_message.delete()
         await interaction.response.send_message("Processo cancelado.", ephemeral=True)
         self.stop()
 
@@ -179,7 +187,8 @@ class DesignerToolsView(ui.View):
                          "<:9_:1416148650433970216> Após clicar, envie no chat as imagens desejadas."),
             color=0xfe0155
         )
-        await interaction.response.send_message(embed=embed, view=ProcessingChoiceView())
+        # Passa a mensagem original do comando para a próxima View, para que ela possa ser deletada
+        await interaction.response.send_message(embed=embed, view=ProcessingChoiceView(original_message=interaction.message))
 
     @ui.button(label="Upar no Imgur", style=discord.ButtonStyle.secondary, emoji="☁️", custom_id="main_upload_button")
     async def upload_button(self, interaction: discord.Interaction, button: ui.Button):
