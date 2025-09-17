@@ -9,7 +9,8 @@ import io
 import os
 
 # --- CONFIGURAÇÃO ---
-# Recomendo usar os.getenv() no servidor
+# No servidor, use os.getenv("NOME_DA_VARIAVEL")
+# Para testes locais, pode definir diretamente:
 DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")
 IMGUR_CLIENT_ID = os.getenv("IMGUR_CLIENT_ID")
 
@@ -30,7 +31,6 @@ def round_corners_logic(image_bytes: bytes) -> io.BytesIO:
         return final_buffer
 
 async def upload_to_imgur_logic(session: aiohttp.ClientSession, image_bytes: bytes) -> Union[str, None]:
-    # Esta função já espera os bytes da imagem prontos para o upload
     url = "https://api.imgur.com/3/upload"
     headers = {'Authorization': f'Client-ID {IMGUR_CLIENT_ID}'}
     data = {'image': image_bytes}
@@ -62,7 +62,6 @@ class SingleImageURLModal(ui.Modal, title="Upar Imagem no Imgur"):
                 await interaction.followup.send("URL inválida.", ephemeral=True)
                 return
 
-            # Converte para PNG para garantir compatibilidade com o Imgur
             try:
                 with Image.open(io.BytesIO(image_data)) as image:
                     output_buffer = io.BytesIO()
@@ -84,119 +83,10 @@ class SingleImageURLModal(ui.Modal, title="Upar Imagem no Imgur"):
 # View Secundária para processamento em massa
 class ProcessingChoiceView(ui.View):
     def __init__(self):
-        super().__init__(timeout=None)
-    # ... (código da ProcessingChoiceView continua o mesmo da versão anterior)
+        # Esta View é temporária, então definimos um timeout de 5 minutos
+        super().__init__(timeout=120)
+
     async def wait_for_images(self, interaction: discord.Interaction) -> Union[discord.Message, None]:
-        await interaction.response.send_message("Aguardando... Por favor, envie suas imagens em uma única mensagem.", ephemeral=True)
+        await interaction.response.send_message("Aguardando... Por favor, envie suas imagens em uma única mensagem agora.", ephemeral=True)
         def check(m: discord.Message):
-            return m.author == interaction.user and m.channel == interaction.channel and m.attachments
-        try:
-            message_with_images = await bot.wait_for('message', check=check, timeout=300.0)
-            return message_with_images
-        except asyncio.TimeoutError:
-            await interaction.followup.send("Tempo esgotado. Por favor, comece o processo novamente.", ephemeral=True)
-            return None
-
-    async def cleanup(self, interaction_message: discord.Message, user_message: discord.Message):
-        try:
-            await interaction_message.delete()
-            await user_message.delete()
-        except discord.Forbidden:
-            print("Não tenho permissão para apagar mensagens.")
-        except Exception as e:
-            print(f"Erro ao apagar mensagens: {e}")
-
-    @ui.button(label="Arredondar e Upar", style=discord.ButtonStyle.success, emoji="☁️", custom_id="proc_round_upload")
-    async def round_and_upload(self, interaction: discord.Interaction, button: ui.Button):
-        user_message = await self.wait_for_images(interaction)
-        if user_message is None: return
-        processing_msg = await interaction.followup.send("Processando e fazendo upload...", ephemeral=True)
-        links = []
-        image_bytes_list = [await att.read() for att in user_message.attachments if att.content_type.startswith('image/')]
-        async with aiohttp.ClientSession() as session:
-            for image_bytes in image_bytes_list:
-                rounded_buffer = round_corners_logic(image_bytes)
-                link = await upload_to_imgur_logic(session, rounded_buffer.read())
-                if link: links.append(link)
-        if links:
-            links_string = "\n".join(links)
-            embed = discord.Embed(title="Upload Concluído", description=f"```{links_string}```", color=0xfe0155)
-            await processing_msg.edit(content=None, embed=embed)
-        else:
-            await processing_msg.edit(content="Ocorreu um erro ao fazer o upload das imagens.")
-        await self.cleanup(interaction.message, user_message)
-        self.stop()
-
-    @ui.button(label="Arredondar", style=discord.ButtonStyle.primary, emoji="🖼️", custom_id="proc_round_only")
-    async def round_only(self, interaction: discord.Interaction, button: ui.Button):
-        user_message = await self.wait_for_images(interaction)
-        if user_message is None: return
-        processing_msg = await interaction.followup.send("Arredondando imagens...", ephemeral=True)
-        processed_files = []
-        image_bytes_list = [await att.read() for att in user_message.attachments if att.content_type.startswith('image/')]
-        for image_bytes in image_bytes_list:
-            rounded_buffer = round_corners_logic(image_bytes)
-            processed_files.append(discord.File(fp=rounded_buffer, filename=f"rounded_{len(processed_files)}.png"))
-        try:
-            await processing_msg.edit(content=f"Enviando {len(processed_files)} imagem(ns) para o seu privado...")
-            for file in processed_files:
-                await interaction.user.send(file=file)
-                file.fp.seek(0)
-            await processing_msg.edit(content=f"Todas as {len(processed_files)} imagem(ns) foram enviadas no seu privado! ✔️")
-        except discord.Forbidden:
-            await processing_msg.edit(content="Não consegui enviar no seu privado (suas DMs podem estar desativadas). Aqui estão suas imagens:", files=processed_files)
-        await self.cleanup(interaction.message, user_message)
-        self.stop()
-
-# View Principal (COM A ALTERAÇÃO SOLICITADA)
-class DesignerToolsView(ui.View):
-    def __init__(self):
-        super().__init__(timeout=None)
-
-    @ui.button(label="Arredondar Borda", style=discord.ButtonStyle.primary, emoji="🖼️", custom_id="main_round_button")
-    async def round_button(self, interaction: discord.Interaction, button: ui.Button):
-        embed = discord.Embed(
-            title="<:4_:1415749694755307550> Arredondar Imagens",
-            description=("<:9_:1415749674786361354> Escolha uma opção conforme o desejado.\n"
-            "<:9_:1415749674786361354> Após clicar, envie no chat as imagens desejadas."),
-            color=0xfe0155
-        )
-        # Envia a View secundária com as opções de processamento em massa
-        await interaction.response.send_message(embed=embed, view=ProcessingChoiceView())
-
-    @ui.button(label="Upar no Imgur", style=discord.ButtonStyle.secondary, emoji="☁️", custom_id="main_upload_button")
-    async def upload_button(self, interaction: discord.Interaction, button: ui.Button):
-        # --- ALTERAÇÃO AQUI ---
-        # A funcionalidade antiga foi restaurada: abre o pop-up para um único link
-        await interaction.response.send_modal(SingleImageURLModal())
-
-# Setup do Bot e Comando Principal
-intents = discord.Intents.default()
-intents.message_content = True
-bot = commands.Bot(command_prefix="!", intents=intents)
-
-@bot.event
-async def on_ready():
-    bot.add_view(DesignerToolsView())
-    bot.add_view(ProcessingChoiceView())
-    print(f'Bot {bot.user} está online e pronto!')
-
-@bot.command()
-async def designer(ctx):
-    embed = discord.Embed(
-        title="<:4_:1415749694755307550> Designer Tools",
-        description=(
-            "<:9_:1415749674786361354> Para arredondar ou upar uma imagem, selecione o botão desejado;\n"
-            "<:9_:1415749674786361354> Ao clicar no botão, forneça os itens conforme solicitado.\n"
-            " \n"
-            "<:8_:1416190695227789322> ___Obs:___\n"
-            "-# <:9_:1415749674786361354> Após arredondar, o bot irá enviar pela dm a(s) imagem(ns) solicitada(s). Caso o seu privado esteja fechado ele irá enviar uma mensagem efêmera no canal com a(s) imagem(ns).\n"
-            "-# <:9_:1415749674786361354> Ao solicitar que o bot upe a(s) imagem(ns) no imgur, ele irá enviar uma mensagem efêmera no canal atual com o link da(s) imagem(ns)."
-        ),
-        color=0xfe0155
-    )
-    embed.set_image(url="https://i.imgur.com/8dylYAD.png")
-    await ctx.send(embed=embed, view=DesignerToolsView())
-
-# --- INICIALIZAÇÃO DO BOT ---
-bot.run(DISCORD_TOKEN)
+            return m.author == interaction.user and
