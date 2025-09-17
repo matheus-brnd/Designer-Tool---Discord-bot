@@ -46,7 +46,12 @@ async def upload_to_imgur_logic(session: aiohttp.ClientSession, image_bytes: byt
 
 # Modal para UMA imagem
 class SingleImageURLModal(ui.Modal, title="Upar Imagem no Imgur"):
-    image_url = ui.TextInput(label="Cole o link da imagem para upload", style=discord.TextStyle.short, required=True)
+     image_url = ui.TextInput(
+        label="Link da Imagem",
+        placeholder="https://exemplo.com/minha_imagem.png (ou .webp, .jpg...)",
+        style=discord.TextStyle.short,
+        required=True
+    )
 
     async def on_submit(self, interaction: discord.Interaction):
         await interaction.response.defer(ephemeral=True, thinking=True)
