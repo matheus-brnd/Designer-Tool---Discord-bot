@@ -83,10 +83,51 @@ class SingleImageURLModal(ui.Modal, title="Upar Imagem no Imgur"):
 # View Secundária para processamento em massa
 class ProcessingChoiceView(ui.View):
     def __init__(self):
-        # Esta View é temporária, então definimos um timeout de 5 minutos
-        super().__init__(timeout=120)
+        super().__init__(timeout=300)
 
     async def wait_for_images(self, interaction: discord.Interaction) -> Union[discord.Message, None]:
         await interaction.response.send_message("Aguardando... Por favor, envie suas imagens em uma única mensagem agora.", ephemeral=True)
         def check(m: discord.Message):
-            return m.author == interaction.user and
+            # --- CORREÇÃO AQUI ---
+            # A linha inteira do "return" deve ficar junta
+            return m.author == interaction.user and m.channel == interaction.channel and m.attachments
+        try:
+            message_with_images = await bot.wait_for('message', check=check, timeout=300.0)
+            return message_with_images
+        except asyncio.TimeoutError:
+            await interaction.followup.send("Tempo esgotado. Por favor, comece o processo novamente.", ephemeral=True)
+            return None
+
+    async def cleanup(self, interaction_message: discord.Message, user_message: discord.Message):
+        try:
+            await interaction_message.delete()
+            await user_message.delete()
+        except discord.Forbidden:
+            print("Não tenho permissão para apagar mensagens.")
+        except Exception as e:
+            print(f"Erro ao apagar mensagens: {e}")
+
+    @ui.button(label="Arredondar e Upar", style=discord.ButtonStyle.success, emoji="🚀")
+    async def round_and_upload(self, interaction: discord.Interaction, button: ui.Button):
+        user_message = await self.wait_for_images(interaction)
+        if user_message is None: 
+            await interaction.message.delete()
+            return
+        
+        processing_msg = await interaction.followup.send("Processando e fazendo upload...", ephemeral=True)
+        links = []
+        image_bytes_list = [await att.read() for att in user_message.attachments if att.content_type.startswith('image/')]
+        async with aiohttp.ClientSession() as session:
+            for image_bytes in image_bytes_list:
+                rounded_buffer = round_corners_logic(image_bytes)
+                link = await upload_to_imgur_logic(session, rounded_buffer.read())
+                if link: links.append(link)
+        
+        if links:
+            links_string = "\n".join(links)
+            embed = discord.Embed(title="Upload Concluído", description=f"```{links_string}```", color=0x5865F2)
+            await processing_msg.edit(content=None, embed=embed)
+        else:
+            await processing_msg.edit(content="Ocorreu um erro ao fazer o upload das imagens.")
+        
+        await self.cleanup(interaction
