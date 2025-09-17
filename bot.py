@@ -152,7 +152,7 @@ class ProcessingChoiceView(ui.View):
         await self.cleanup(interaction.message, user_message)
         self.stop()
     
-    @ui.button(label="Cancelar", style=discord.ButtonStyle.danger, emoji="✖️")
+    @ui.button(label="", style=discord.ButtonStyle.danger, emoji="✖️")
     async def cancel_button(self, interaction: discord.Interaction, button: ui.Button):
         await interaction.message.delete()
         # A linha que apagava a embed principal foi REMOVIDA daqui.
