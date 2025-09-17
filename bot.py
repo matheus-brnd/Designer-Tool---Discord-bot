@@ -86,7 +86,7 @@ class ProcessingChoiceView(ui.View):
     def __init__(self):
         super().__init__(timeout=None)
     # ... (código da ProcessingChoiceView continua o mesmo da versão anterior)
-    async def wait_for_images(self, interaction: discord.Interaction) -> discord.Message | None:
+    async def wait_for_images(self, interaction: discord.Interaction) -> Union[discord.Message, None]:
         await interaction.response.send_message("Aguardando... Por favor, envie suas imagens em uma única mensagem.", ephemeral=True)
         def check(m: discord.Message):
             return m.author == interaction.user and m.channel == interaction.channel and m.attachments
