@@ -130,4 +130,83 @@ class ProcessingChoiceView(ui.View):
         else:
             await processing_msg.edit(content="Ocorreu um erro ao fazer o upload das imagens.")
         
-        await self.cleanup(interaction
+        await self.cleanup(interaction.message, user_message)
+        self.stop()
+
+    @ui.button(label="Arredondar", style=discord.ButtonStyle.primary, emoji="🖼️")
+    async def round_only(self, interaction: discord.Interaction, button: ui.Button):
+        user_message = await self.wait_for_images(interaction)
+        if user_message is None:
+            await interaction.message.delete()
+            return
+        
+        processing_msg = await interaction.followup.send("Arredondando imagens...", ephemeral=True)
+        processed_files = []
+        image_bytes_list = [await att.read() for att in user_message.attachments if att.content_type.startswith('image/')]
+        for image_bytes in image_bytes_list:
+            rounded_buffer = round_corners_logic(image_bytes)
+            processed_files.append(discord.File(fp=rounded_buffer, filename=f"rounded_{len(processed_files)}.png"))
+        try:
+            await processing_msg.edit(content=f"Enviando {len(processed_files)} imagem(ns) para o seu privado...")
+            for file in processed_files:
+                await interaction.user.send(file=file)
+                file.fp.seek(0)
+            await processing_msg.edit(content=f"Todas as {len(processed_files)} imagem(ns) foram enviadas no seu privado! ✔️")
+        except discord.Forbidden:
+            for file in processed_files: file.fp.seek(0)
+            await processing_msg.edit(content="Não consegui enviar no seu privado (suas DMs podem estar desativadas). Aqui estão suas imagens:", files=processed_files)
+        
+        await self.cleanup(interaction.message, user_message)
+        self.stop()
+    
+    @ui.button(label="Cancelar", style=discord.ButtonStyle.danger, emoji="✖️")
+    async def cancel_button(self, interaction: discord.Interaction, button: ui.Button):
+        await interaction.message.delete()
+        await interaction.response.send_message("Processo cancelado.", ephemeral=True)
+        self.stop()
+
+
+# View Principal
+class DesignerToolsView(ui.View):
+    def __init__(self):
+        super().__init__(timeout=None)
+
+    @ui.button(label="Arredondar Borda", style=discord.ButtonStyle.primary, emoji="🖼️", custom_id="main_round_button")
+    async def round_button(self, interaction: discord.Interaction, button: ui.Button):
+        embed = discord.Embed(
+            title="Arredondar Imagens",
+            description="Escolha uma opção de processamento. Após clicar, envie as imagens desejadas no canal.",
+            color=0xfe0155
+        )
+        await interaction.response.send_message(embed=embed, view=ProcessingChoiceView())
+
+    @ui.button(label="Upar no Imgur", style=discord.ButtonStyle.secondary, emoji="☁️", custom_id="main_upload_button")
+    async def upload_button(self, interaction: discord.Interaction, button: ui.Button):
+        await interaction.response.send_modal(SingleImageURLModal())
+
+# Setup do Bot e Comando Principal
+intents = discord.Intents.default()
+intents.message_content = True
+bot = commands.Bot(command_prefix="!", intents=intents)
+
+@bot.event
+async def on_ready():
+    bot.add_view(DesignerToolsView())
+    # A ProcessingChoiceView não precisa ser registrada aqui pois é temporária
+    print(f'Bot {bot.user} está online e pronto!')
+
+@bot.command()
+async def designer(ctx):
+    embed = discord.Embed(
+        title="<:4_:1415749694755307550> Designer Tools",
+        description=(
+            "<:9_:1415749674786361354> **Arredondar Borda**: Inicia o processo para arredondar uma ou mais imagens enviadas no canal.\n"
+            "<:9_:1415749674786361354> **Upar no Imgur**: Abre um pop-up para fazer o upload de uma única imagem por link."
+        ),
+        color=0xfe0155
+    )
+    embed.set_image(url="https://i.imgur.com/8dylYAD.png")
+    await ctx.send(embed=embed, view=DesignerToolsView())
+
+# --- INICIALIZAÇÃO DO BOT ---
+bot.run(DISCORD_TOKEN)
