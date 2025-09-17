@@ -10,8 +10,8 @@ import os
 
 # --- CONFIGURAÇÃO ---
 # No servidor, use os.getenv("NOME_DA_VARIAVEL")
-DISCORD_TOKEN = "SEU_TOKEN_AQUI"
-IMGUR_CLIENT_ID = "SEU_CLIENT_ID_AQUI"
+DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")
+IMGUR_CLIENT_ID = os.getenv("IMGUR_CLIENT_ID")
 
 # --- LÓGICA DO BOT ---
 
