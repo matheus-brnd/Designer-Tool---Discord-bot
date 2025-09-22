@@ -72,7 +72,7 @@ class SingleImageURLModal(ui.Modal, title="Upar Imagem no Imgur"):
             upload_link = await upload_to_imgur_logic(session, image_bytes_as_png)
             if upload_link:
                 embed = discord.Embed(title="Upload Concluído", color=0xfe0155)
-                embed.add_field(name="Link do Imgur", value=f"```{upload_link}```")
+                embed.add_field(name="Link do Imgur", value=f"``{upload_link}``")
                 await interaction.followup.send(embed=embed, ephemeral=True)
             else:
                 await interaction.followup.send("Ocorreu um erro ao enviar para o Imgur.", ephemeral=True)
