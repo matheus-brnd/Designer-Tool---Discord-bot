@@ -121,7 +121,7 @@ class ProcessingChoiceView(ui.View):
                 if link: links.append(link)
         if links:
             links_string = "\n".join(links)
-            embed = discord.Embed(title="Upload Concluído", description=f"```{links_string}```", color=0x5865F2)
+            embed = discord.Embed(title="Upload Concluído", description=f"``{links_string}``", color=0x5865F2)
             await processing_msg.edit(content=None, embed=embed)
         else:
             await processing_msg.edit(content="Ocorreu um erro ao fazer o upload das imagens.")
