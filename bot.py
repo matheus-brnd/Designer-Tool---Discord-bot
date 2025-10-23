@@ -6,9 +6,10 @@ import asyncio
 from PIL import Image, ImageDraw
 import aiohttp
 import io
+import os
 
-DISCORD_TOKEN = "DISCORD_TOKEN"
-IMGUR_CLIENT_ID = "IMGUR_CLIENT_ID"
+DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")
+IMGUR_CLIENT_ID = os.getenv("IMGUR_CLIENT_ID")
 
 # Função Arredondar Bordas
 
